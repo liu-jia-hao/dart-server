@@ -1,4 +1,4 @@
 # Build
-docker build -t node_app .
+docker build -t aiinee_api .
 # Run
-docker run -dp 3000:3000 node_app
+docker run -dp 3000:3000 aiinee_api
