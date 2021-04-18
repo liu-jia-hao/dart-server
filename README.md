@@ -1,4 +1,4 @@
 # Build
 docker build -t aiinee_api .
 # Run
-docker run -dp 3000:3000 aiinee_api
+docker run -dp 4049:4049 aiinee_api
