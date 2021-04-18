@@ -1,6 +1,6 @@
-GET http://localhost:4040
+GET http://localhost:8080/ HTTP/2.2
 ###
-POST http://localhost:3030
+POST http://localhost:8080
 
 Content-Type: application/json
 

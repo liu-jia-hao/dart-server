@@ -1,113 +1,35 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:body_parser/body_parser.dart'
-Future<void> main() async {
-  final server = await createServer();
-  print('Server started: ${server.address} port ${server.port}');
-  await handleRequests(server);
+import 'package:dia/dia.dart';
+import 'package:dia_body/dia_body.dart';
+import 'resolvers/index.dart';
+
+class ContextWithBody extends Context with ParsedBody {
+  ContextWithBody(HttpRequest request) : super(request);
 }
 
-Future<HttpServer> createServer() async {
-  final address = InternetAddress.loopbackIPv4;
-  const port = 3030;
-  return await HttpServer.bind(address, port);
-}
+void main() {
+  final app = App((req) => ContextWithBody(req));
 
-Future<void> handleRequests(HttpServer server) async {
-  await for (HttpRequest request in server) {
-    switch (request.method) {
-      case 'GET':
-        handleGet(request);
-        break;
-      case 'POST':
-        handlePost(request);
-        break;
-      default:
-        handleDefault(request);
+  app.use(body());
+// query  parsed  files
+  app.use((ctx, next) async {
+    var a = ['1', 1];
+    try {
+      Map<String, dynamic> query = ctx.parsed;
+      List<Future<dynamic>> tasks = [];
+      query.forEach((key, value) {
+        tasks.add(resolvers[key](value));
+      });
+      await Future.wait(tasks);
+      ctx.body = result.toString();
+      next();
+    } catch (err) {
+      print(err);
     }
-  }
-}
+  });
 
-var myStringStorage = 'Hello from a Dart server';
-const fruit = ['apple', 'banana', 'peach', 'pear'];
-
-/// GET requests
-void handleGet(HttpRequest request) {
-  final path = request.uri.path;
-  switch (path) {
-    case '/fruit':
-      handleGetFruit(request);
-      break;
-    case '/vegetables':
-      handleGetVegetables(request);
-      break;
-    default:
-      handleGetOther(request);
-  }
-}
-
-void handleGetFruit(HttpRequest request) {
-  final queryParams = request.uri.queryParameters;
-
-  // Return all fruit if there are no query parameters
-  if (queryParams.isEmpty) {
-    final jsonString = jsonEncode(fruit);
-    request.response
-      ..statusCode = HttpStatus.ok
-      ..write(jsonString)
-      ..close();
-    return;
-  }
-
-  // Find any fruit that start with the 'prefix'
-  final prefix = queryParams['prefix'];
-  final matches = fruit
-      .where(
-        (item) => item.startsWith(prefix),
-      )
-      .toList();
-
-  // Respond based on the matches found
-  if (matches.isEmpty) {
-    request.response
-      ..statusCode = HttpStatus.notFound
-      ..close();
-  } else {
-    final jsonString = jsonEncode(matches);
-    request.response
-      ..statusCode = HttpStatus.ok
-      ..write(jsonString)
-      ..close();
-  }
-}
-
-void handleGetVegetables(HttpRequest request) {
-  request.response
-    ..statusCode = HttpStatus.ok
-    ..write(myStringStorage)
-    ..close();
-}
-
-void handleGetOther(HttpRequest request) {
-  request.response
-    ..statusCode = HttpStatus.badRequest
-    ..close();
-}
-
-/// POST requests
-Future<void> handlePost(HttpRequest request) async {
-  print(request.contains);
-  dynamic myStringStorage = await utf8.decoder.bind(request);
-  print(myStringStorage);
-  request.response
-    ..write('Got it. Thanks.')
-    ..close();
-}
-
-/// Other HTTP method requests
-void handleDefault(HttpRequest request) {
-  request.response
-    ..statusCode = HttpStatus.methodNotAllowed
-    ..write('Unsupported request: ${request.method}.')
-    ..close();
+  /// Start server listen on localhsot:8080
+  app
+      .listen('localhost', 8080)
+      .then((info) => print('Server started on http://localhost:8080'));
 }
