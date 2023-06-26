@@ -2,9 +2,10 @@ import 'dart:io';
 import 'dart:convert';
 import 'getResult.dart';
 
-String _host = InternetAddress.loopbackIPv4.host;
+String _host = InternetAddress.anyIPv4.host;
 
 Future main() async {
+  print('var server = await HttpServer.bind(_host, 8080);');
   var server = await HttpServer.bind(_host, 8080);
   await for (var req in server) {
     HttpResponse response = req.response;
